@@ -360,7 +360,11 @@ static ElfW(Addr) __linker_init_post_relocation(KernelArgumentBlock& args) {
   // Use LD_LIBRARY_PATH and LD_PRELOAD (but only if we aren't setuid/setgid).
   parse_LD_LIBRARY_PATH(ldpath_env);
   parse_LD_PRELOAD(ldpreload_env);
-  parse_LD_SHIM_LIBS(ldshim_libs_env);
+
+#ifdef LD_SHIM_LIBS
+  // Read from TARGET_LD_SHIM_LIBS
+  parse_LD_SHIM_LIBS(LD_SHIM_LIBS);
+#endif
 
   somain = si;
 
@@ -386,6 +390,12 @@ static ElfW(Addr) __linker_init_post_relocation(KernelArgumentBlock& args) {
     needed_library_name_list.push_back(ld_preload_name.c_str());
     ++ld_preloads_count;
   }
+
+#ifdef LD_SHIM_LIBS
+  for_each_matching_shim(si->get_realpath(), [&](const char* name) {
+    needed_library_name_list.push_back(name);
+  });
+#endif
 
   for_each_dt_needed(si, [&](const char* name) {
     needed_library_name_list.push_back(name);
